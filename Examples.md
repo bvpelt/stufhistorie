@@ -472,3 +472,96 @@ select * from persoon  where begingeldigheid < '2001-10-01' and (eindgeldigheid 
  1061 |      5692 |         40 |                       | Bergh         | van den     | JP          | 1977-08-07    | ongehuwd         | 2001-09-03      | 2005-04-23     | 2002-10-07 00:00:00
 (1 row)
 ```
+# Example op grond van tabel 2.8
+Hierin wordt weergegeven hoe om te gaan met relaties.
+Allereerst moet er een tabel gecreerd worden.
+```postgres-sql
+drop sequence if exists persadr_sequence;
+drop table if exists persadr;
+
+CREATE SEQUENCE persadr_sequence
+    START WITH 1000
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+SELECT pg_catalog.setval('persadr_sequence', 1000, false);
+
+ALTER TABLE persadr_sequence OWNER TO bvpelt;
+
+create table persadr (
+	persadrid bigint not NULL DEFAULT nextval('persadr_sequence'),
+	recordid integer,
+	recordidnacorrectie integer,
+	persoonid bigint not NULL,
+	adresid bigint not NULL,
+	beginrelatie date,
+	eindrelatie date,
+	tijdstipregistratie timestamp
+);
+
+ALTER TABLE persadr OWNER TO bvpelt;
+
+ALTER TABLE ONLY persadr
+    ADD CONSTRAINT perspersadr_pkey PRIMARY KEY (persadrid);
+
+CREATE INDEX CONCURRENTLY persadr_persoonid_idx ON persadr (persoonid);
+CREATE INDEX CONCURRENTLY persadr_adresid_idx ON persadr (adresid);
+```
+Vullen van de gegevens
+```postgres-sql
+-- 123 5692 456 19770708 19991108 19770815
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (123,      5692,      456,     '1977-07-08', '1999-11-08', '1977-08-15');
+-- 130 5692 876 19991108          19991112 150
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie, recordidnacorrectie) values
+                    (130,      5692,      876,     '1999-11-08', null,         '1999-11-12',        150);
+-- 150 5692 877 19991108 20050601 19991208
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (150,      5692,      877,     '1999-11-08', '2005-06-01', '1999-12-08');
+-- 170 5692 933 20060601          20060612
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (170,      5692,      933,     '2006-06-01', null,         '2006-06-12');
+```
+## De inhoud van tabel
+```postgres-sql
+select * from persadr;
+ persadrid | recordid | recordidnacorrectie | persoonid | adresid | beginrelatie | eindrelatie | tijdstipregistratie 
+-----------+----------+---------------------+-----------+---------+--------------+-------------+---------------------
+      1000 |      123 |                     |      5692 |     456 | 1977-07-08   | 1999-11-08  | 1977-08-15 00:00:00
+      1001 |      130 |                 150 |      5692 |     876 | 1999-11-08   |             | 1999-11-12 00:00:00
+      1002 |      150 |                     |      5692 |     877 | 1999-11-08   | 2005-06-01  | 1999-12-08 00:00:00
+      1003 |      170 |                     |      5692 |     933 | 2006-06-01   |             | 2006-06-12 00:00:00
+(4 rows)
+```
+## De formele historie
+```postgres-sql
+select * from persadr order by tijdstipregistratie;
+ persadrid | recordid | recordidnacorrectie | persoonid | adresid | beginrelatie | eindrelatie | tijdstipregistratie 
+-----------+----------+---------------------+-----------+---------+--------------+-------------+---------------------
+      1000 |      123 |                     |      5692 |     456 | 1977-07-08   | 1999-11-08  | 1977-08-15 00:00:00
+      1001 |      130 |                 150 |      5692 |     876 | 1999-11-08   |             | 1999-11-12 00:00:00
+      1002 |      150 |                     |      5692 |     877 | 1999-11-08   | 2005-06-01  | 1999-12-08 00:00:00
+      1003 |      170 |                     |      5692 |     933 | 2006-06-01   |             | 2006-06-12 00:00:00
+(4 rows)
+```
+## De matriele historie met correcties
+```postgres-sql
+select * from persadr order by beginrelatie, eindrelatie;
+ persadrid | recordid | recordidnacorrectie | persoonid | adresid | beginrelatie | eindrelatie | tijdstipregistratie 
+-----------+----------+---------------------+-----------+---------+--------------+-------------+---------------------
+      1000 |      123 |                     |      5692 |     456 | 1977-07-08   | 1999-11-08  | 1977-08-15 00:00:00
+      1002 |      150 |                     |      5692 |     877 | 1999-11-08   | 2005-06-01  | 1999-12-08 00:00:00
+      1001 |      130 |                 150 |      5692 |     876 | 1999-11-08   |             | 1999-11-12 00:00:00
+      1003 |      170 |                     |      5692 |     933 | 2006-06-01   |             | 2006-06-12 00:00:00
+(4 rows)
+```
+## Huidige waarde voor de relatie
+```postgres-sql
+select * from persadr where recordidnacorrectie is null order by beginrelatie desc limit 1;
+ persadrid | recordid | recordidnacorrectie | persoonid | adresid | beginrelatie | eindrelatie | tijdstipregistratie 
+-----------+----------+---------------------+-----------+---------+--------------+-------------+---------------------
+      1003 |      170 |                     |      5692 |     933 | 2006-06-01   |             | 2006-06-12 00:00:00
+(1 row)
+```

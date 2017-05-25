@@ -19,7 +19,7 @@ SELECT pg_catalog.setval('persoon_sequence', 1000, false);
 ALTER TABLE persoon_sequence OWNER TO bvpelt;
 
 create table persoon (
-	id bigint not NULL DEFAULT nextval('persoon_sequence'),
+	persid bigint not NULL DEFAULT nextval('persoon_sequence'),
 	persoonid bigint not NULL,
 	volgnummer integer,
 	volgnummernacorrectie integer,
@@ -36,9 +36,9 @@ create table persoon (
 ALTER TABLE persoon OWNER TO bvpelt;
 
 ALTER TABLE ONLY persoon
-    ADD CONSTRAINT persoon_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT persoon_pkey PRIMARY KEY (persid);
 
-CREATE INDEX CONCURRENTLY persoonid_idx ON persoon (persoonid);
+CREATE INDEX CONCURRENTLY persoon_persoonid_idx ON persoon (persoonid);
 
 -- setup dataset tabel 2.1
 
@@ -56,13 +56,6 @@ select * from persoon;
 
 -- matriele historie 
 select * from persoon order by begingeldigheid;
-woz=> select * from persoon order by begingeldigheid;
-  id  | persoonid | volgnummer | volgnummernacorrectie | geslachtsnaam | voorvoegsel | voorletters | geboortedatum | burgerlijkestaat | begingeldigheid | eindgeldigheid | tijdstipregistratie 
-------+-----------+------------+-----------------------+---------------+-------------+-------------+---------------+------------------+-----------------+----------------+---------------------
- 1083 |      5692 |          1 |                       | Poepenstaart  |             | JP          | 1977-08-07    | ongehuwd         | 1977-08-07      |                | 
- 1084 |      5692 |         40 |                       | Bergh         | van den     | JP          | 1977-08-07    | ongehuwd         | 2001-09-03      |                | 
- 1085 |      5692 |         50 |                       | Bergh         | van den     | JP          | 1977-08-07    | gehuwd           | 2005-04-23      |                | 
-(3 rows)
 
 -- huidig geldige record
 select * from persoon order by begingeldigheid desc limit 1;
@@ -245,6 +238,112 @@ select * from persoon  where begingeldigheid < '2001-10-01' and (eindgeldigheid 
 -- geldig record in materiele view op een bepaalde peildatum 2001-10-01
 select * from persoon  where begingeldigheid < '2001-10-01' and (eindgeldigheid is null or eindgeldigheid > '2001-10-01') and volgnummernacorrectie is null order by begingeldigheid, eindgeldigheid ;
 
+-- relatie persoon adres
+drop sequence if exists persadr_sequence;
+drop table if exists persadr;
 
- 
+CREATE SEQUENCE persadr_sequence
+    START WITH 1000
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
+SELECT pg_catalog.setval('persadr_sequence', 1000, false);
+
+ALTER TABLE persadr_sequence OWNER TO bvpelt;
+
+create table persadr (
+	persadrid bigint not NULL DEFAULT nextval('persadr_sequence'),
+	recordid integer,
+	recordidnacorrectie integer,
+	persoonid bigint not NULL,
+	adresid bigint not NULL,
+	beginrelatie date,
+	eindrelatie date,
+	tijdstipregistratie timestamp
+);
+
+ALTER TABLE persadr OWNER TO bvpelt;
+
+ALTER TABLE ONLY persadr
+    ADD CONSTRAINT perspersadr_pkey PRIMARY KEY (persadrid);
+
+CREATE INDEX CONCURRENTLY persadr_persoonid_idx ON persadr (persoonid);
+CREATE INDEX CONCURRENTLY persadr_adresid_idx ON persadr (adresid);
+
+-- 123 5692 456 19770708 19991108 19770815
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (123,      5692,      456,     '1977-07-08', '1999-11-08', '1977-08-15');
+-- 130 5692 876 19991108          19991112 150
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie, recordidnacorrectie) values
+                    (130,      5692,      876,     '1999-11-08', null,         '1999-11-12',        150);
+-- 150 5692 877 19991108 20050601 19991208
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (150,      5692,      877,     '1999-11-08', '2005-06-01', '1999-12-08');
+-- 170 5692 933 20060601          20060612
+insert into persadr (recordid, persoonid, adresid, beginrelatie, eindrelatie,  tijdstipregistratie) values
+                    (170,      5692,      933,     '2006-06-01', null,         '2006-06-12');
+
+-- inhoud van de relatie tabel
+select * from persadr;
+
+-- De formele historie
+select * from persadr order by tijdstipregistratie;
+
+-- De matriele historie met correcties
+select * from persadr order by beginrelatie, eindrelatie;
+
+-- Huidige waarde voor de relatie
+select * from persadr where recordidnacorrectie is null order by beginrelatie desc limit 1;
+
+-- tabel adres
+drop sequence if exists adres_sequence;
+drop table if exists adres;
+
+CREATE SEQUENCE adres_sequence
+    START WITH 1000
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+SELECT pg_catalog.setval('adres_sequence', 1000, false);
+
+ALTER TABLE adres_sequence OWNER TO bvpelt;
+
+create table adres (
+	adrid bigint not NULL DEFAULT nextval('adres_sequence'),
+	adresid bigint not NULL,
+	volgnummer integer,
+	volgnummernacorrectie integer,
+	straat varchar(24),
+	huisnummer int,
+	huisnummertoevoeging char(4),
+	postcode char(6),
+	woonplaats varchar(48),
+	begingeldigheid date,
+	eindgeldigheid date,
+	tijdstipregistratie timestamp
+);
+
+ALTER TABLE adres OWNER TO bvpelt;
+
+ALTER TABLE ONLY adres
+    ADD CONSTRAINT adres_adrid_pkey PRIMARY KEY (adrid);
+
+CREATE INDEX CONCURRENTLY adres_adresid_idx ON persadr (adresid);
+-- pagina 13
+-- adresid, volgnummer, volgnummernacorrectie, straat,         huisnummer, huisnummertoevoeging, postcode, woonplaats, begingeldigheid, eindgeldigheid, tijdstipregistratie
+--  456        10                              Beatrixstraat    105                              5686 AF   Nuenen      1990-01-01                       2001-02-01
+--  876        10                              Vallestap        32                               5654 BX   Nuenen      1990-01-01                       2001-02-01
+--  877        10                              Vallestap        33                               5654 BX   Nuenen      1990-01-01                       2001-02-01
+--  933        10                              Donk             24                               5612 BF   Eindhoven   1990-01-01                       2001-01-01
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (456,     10,         'Beatrixstraat', 105,        '5686AF', 'Nuenen',    '1960-01-01',    '2001-02-01');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (876,     10,         'Vallestap',     32,         '5654BX', 'Nuenen',    '1965-01-01',    '2001-02-01');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (877,     10,         'Vallestap',     33,         '5654BX', 'Nuenen',    '1965-01-01',    '2001-02-01');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (933,     10,         'Donk',          24,         '5612BF', 'Eindhoven', '1970-01-01',    '2001-02-01');
