@@ -338,12 +338,21 @@ CREATE INDEX CONCURRENTLY adres_adresid_idx ON persadr (adresid);
 --  456        10                              Beatrixstraat    105                              5686 AF   Nuenen      1990-01-01                       2001-02-01
 --  876        10                              Vallestap        32                               5654 BX   Nuenen      1990-01-01                       2001-02-01
 --  877        10                              Vallestap        33                               5654 BX   Nuenen      1990-01-01                       2001-02-01
+--  880        10                              Vallestap        64                               5654 BX   Nuenen      1990-01-01                       2001-02-01
+--  880        10                              Vallestap        65                               5654 BX   Nuenen      1990-01-01                       2001-02-01
 --  933        10                              Donk             24                               5612 BF   Eindhoven   1990-01-01                       2001-01-01
+--  934        10                              Donk             19                               5612 BF   Eindhoven   1990-01-01                       2001-01-01
 insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
                   (456,     10,         'Beatrixstraat', 105,        '5686AF', 'Nuenen',    '1960-01-01',    '2001-02-01');
 insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
                   (876,     10,         'Vallestap',     32,         '5654BX', 'Nuenen',    '1965-01-01',    '2001-02-01');
 insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
                   (877,     10,         'Vallestap',     33,         '5654BX', 'Nuenen',    '1965-01-01',    '2001-02-01');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, eindgeldigheid, tijdstipregistratie) values
+                  (880,     10,         'Vallestap',     64,         '5654BX', 'Nuenen',    '1965-01-01',    '2007-05-10', '2007-05-10');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (880,     10,         'Vallestap',     65,         '5654BX', 'Nuenen',    '2007-05-10',    '2007-08-12');
 insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
                   (933,     10,         'Donk',          24,         '5612BF', 'Eindhoven', '1970-01-01',    '2001-02-01');
+insert into adres (adresid, volgnummer, straat,          huisnummer, postcode, woonplaats,  begingeldigheid, tijdstipregistratie) values
+                  (934,     10,         'Donk',          19,         '5612BF', 'Eindhoven', '1970-01-01',    '2001-02-01');
